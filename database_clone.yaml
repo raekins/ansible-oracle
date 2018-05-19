@@ -10,10 +10,11 @@
 # 8. Bring up the database & change filenames
 #
 - name: Oracle Database Refresh
-  hosts: z-oracle2
+  hosts: tgtservers 
   vars_files:
     - vars/arrays.yaml
-    - vars/devslob.yaml 
+    - vars/slob.yaml 
+    - vars/devslob.yaml
 
   tasks:
 # Set Suffix
@@ -34,17 +35,28 @@
     - name: Copy rename db datafiles script
       template: src=templates/8_rendbfiles.sh.j2 dest={{ tgt_dir }}/8_rendbfiles.sh mode=0755
 
+    - name: Copy show db script
+      template: src=templates/9_showDB.sh.j2 dest={{ tgt_dir }}/9_showDB.sh mode=0755
+
     - name: Copy database shutdown script to target database server
       template: src=templates/shutdownDB.sh.j2 dest={{ tgt_dir }}/shutdownDB.sh mode=0755
 
     - name: Copy database startup Mount script to target database server
       template: src=templates/5_startup.sh.j2 dest={{ tgt_dir }}/5_startup.sh mode=0755
 
+    - name: Copy database SQL script to target database server
+      copy: src=files/showDB.sql dest={{ tgt_dir }}/showDB.sql mode=0755
+
 # Create Pure session
     - include: tasks/create_session.yaml
+      run_once: yes
+    
+#    - pause:
+#        prompt: "Look in /tmp"
 
 # Take Snapshot of database volumes
     - include: tasks/take_snapshot.yaml
+      run_once: yes
 
 # Stop Target Database
     - include: tasks/shutdown_DB.yaml
@@ -54,9 +66,6 @@
 
 # Copy Snapshot to target database volume
     - include: tasks/copy_volume.yaml
-
-# Delete Snapshot of database volumes
-    - include: tasks/delete_snapshot.yaml
 
 # Mount Target volume
     - include: tasks/mount_volume.yaml
@@ -87,3 +96,13 @@
       shell: '{{ tgt_dir }}/8_rendbfiles.sh > 8_rendbfiles.log 2>&1'
       args:
         chdir: "{{ tgt_dir }}"
+
+# Show target database details
+    - name: Show Target database details
+      shell: '{{ tgt_dir }}/9_showDB.sh > 9_showDB.log 2>&1'
+      args:
+        chdir: "{{ tgt_dir }}"
+
+# Delete Snapshot of database volumes
+    - include: tasks/delete_snapshot.yaml
+      run_once: yes

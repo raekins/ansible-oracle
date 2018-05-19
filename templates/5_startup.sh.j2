@@ -6,6 +6,7 @@ export PATH=$PATH:$ORACLE_HOME/bin
 sqlplus -s / as sysdba << EOF
 startup pfile='{{ old_init }}'
 alter system switch logfile;
+alter database disable block change tracking;
 shutdown immediate;
 startup mount pfile='{{ old_init }}'
 exit

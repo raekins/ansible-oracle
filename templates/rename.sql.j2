@@ -16,6 +16,9 @@ select 'alter database rename file '''||
 select 'alter database rename file '''||member||''' to '''||
        substr(member,1,instr(member,'{{ src_db }}')-1) ||'{{ tgt_db }}'||substr(member,instr(member,'{{ src_db }}')+7) ||''';'
   from v$logfile;
+select 'alter database enable block change tracking using file '''||
+        substr(filename,1,instr(filename,'{{ src_db }}')-1) ||'{{ tgt_db }}'||substr(filename,instr(filename,'{{ src_db }}')+7) ||''';'
+  from v$block_change_tracking;
 prompt set term on
 spool off
 exit
