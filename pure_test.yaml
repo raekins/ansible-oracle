@@ -1,0 +1,41 @@
+- name: Pure Storage storage module examples
+  hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Create new volume ansible_data
+    purefa_volume:
+      name: ansible_data
+      size: 1T
+ 
+  - name: Create new (disabled) protection group demoPG and connect volumes
+    purefa_pg:
+      pgroup: demoPG
+      volume:
+        - ansible_data
+      enabled: False
+ 
+  - name: take snapshot of demoPG
+    purefa_pgsnap:
+      name: demoPG
+      suffix: snap
+ 
+  - pause:
+ 
+  - name: Eradicate demoPG snapshot
+    purefa_pgsnap:
+      name: demoPG
+      suffix: snap
+      eradicate: true
+      state: absent
+ 
+  - name: Remove volume protection group
+    purefa_pg:
+      pgroup: demoPG
+      state: absent
+      eradicate: true
+ 
+  - name: Delete data volume
+    purefa_volume:
+      name: ansible_data
+      state: absent
+      eradicate: true
