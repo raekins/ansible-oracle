@@ -2,7 +2,7 @@
 # Summary of Steps
 # 1. Stop target database (if running)
 # 2. Unmount the filesystem on target server (if mounted)
-# 3. Take snapshot of the source volumes on Pure
+# 3. Take snapshot of the source volumes and replicate to target array
 # 4. Mount the cloned volumes on target server
 # 5. Bring up the database on target server in mount mode
 # 6. Change the database name using nid
@@ -10,7 +10,7 @@
 # 8. Bring up the database & change filenames
 #
 - name: Oracle Database Refresh
-  hosts: tgtservers 
+  hosts: repservers 
   vars_files:
     - vars/arrays.yaml
     - vars/database.yaml 
@@ -22,12 +22,12 @@
       run_once: yes
 
 # Set-up
-    - include: tasks/setup.yaml
-      tags: setup
+#    - include: tasks/setup.yaml
+#      tags: setup
 
 # Create Oracle admin directories
-    - include: tasks/create_admin.yaml
-      tags: setup
+#    - include: tasks/create_admin.yaml
+#      tags: setup
 
 # Create Pure session
     - include: tasks/create_session.yaml
@@ -37,8 +37,10 @@
 #        prompt: "Look in /tmp"
 
 # Take Snapshot of database volumes
-    - include: tasks/take_snapshot.yaml
+    - include: tasks/take_PGsnapshot.yaml
       run_once: yes
+
+#    - meta: end_play
 
 # Stop Target Database
     - include: tasks/shutdown_DB.yaml
@@ -48,15 +50,19 @@
     - include: tasks/unmount_volume.yaml
       tags: unmount
 
-# Copy Snapshot to target database volume
-    - include: tasks/copy_volume.yaml
-      tags: refresh
+# Monitor Protection Group replication
+    - include: tasks/monitor_PGsnapshot.yaml
+      tags: replicate
 
-#    - meta: end_play
+# Copy Snapshot to target database volume
+    - include: tasks/copyRep_volume.yaml
+      tags: refresh
 
 # Mount Target volume
     - include: tasks/mount_volume.yaml
       tags: mount
+
+#    - meta: end_play
 
 # Startup Mount Target Database
     - include: tasks/5_startup.yaml
@@ -80,7 +86,3 @@
       shell: '{{ tgt_dir }}/8_rendbfiles.sh > 8_rendbfiles.log 2>&1'
       args:
         chdir: "{{ tgt_dir }}"
-
-# Delete Snapshot of database volumes
-    - include: tasks/delete_snapshot.yaml
-      run_once: yes
